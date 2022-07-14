@@ -16,4 +16,9 @@ pip install -r requirements.txt
 python manage.py runserver
 ```
 ### Авторы
-[Yandex Practicum] и [Максим Вербицкий] 
+[Yandex Practicum] и [Максим Вербицкий]
+
+[//]: # (Это реализация ссылок, использованных в теле этой заметки и они необходимы для работы markdown processor.)
+
+   [Yandex Practicum]: <https://practicum.yandex.ru/>
+   [Максим Вербицкий]: <https://www.facebook.com/maks.verbitskii/>
