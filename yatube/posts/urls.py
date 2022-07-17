@@ -19,6 +19,8 @@ from . import views
 urlpatterns = [
     # Главная страница
     path('', views.index),
+    # Страницы записей
+    path('group_list.html', views.group_list),
     # Страницы соообществ
     path('group/<slug:slug>/', views.group_posts),
 ]
