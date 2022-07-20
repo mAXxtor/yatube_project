@@ -1,25 +1,19 @@
-from django.shortcuts import render, get_object_or_404
-from .models import Post, Group
+from django.conf import settings
+from django.shortcuts import get_object_or_404, render
+
+from .models import Group, Post
 
 
-# Главная страница.
 def index(request):
-    title = 'Последние обновления на сайте'
-    posts = Post.objects.order_by('-pub_date')[:10]
-    context = {
-        'title': title,
-        'posts': posts,
-    }
+    posts = Post.objects.all()[:settings.NUMBER_OF_POSTS]
+    context = {'posts': posts}
     return render(request, 'posts/index.html', context)
 
 
-# Страница с постами, отфильтрованными по группам.
 def group_posts(request, slug):
     group = get_object_or_404(Group, slug=slug)
-    title = (f'Записи сообщества {group.title}')
-    posts = Post.objects.filter(group=group).order_by('-pub_date')[:10]
+    posts = group.posts_by_group.all()[:settings.NUMBER_OF_POSTS]
     context = {
-        'title': title,
         'group': group,
         'posts': posts,
     }
