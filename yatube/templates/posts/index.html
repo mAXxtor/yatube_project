@@ -16,6 +16,8 @@
         <p>{{ post.text|linebreaks }}</p>
         {% if post.group %}
           <a href="{% url 'posts:group_list' post.group.slug %}">#{{ post.group.title }}</a>
+        {% else %}
+          <span style='color: red'>Этой публикации нет ни в одном сообществе.</span>
         {% endif %}
       </article>
     {% if not forloop.last %}<hr>{% endif %}

@@ -13,11 +13,9 @@ class PostAdmin(admin.ModelAdmin):
 
 class GroupAdmin(admin.ModelAdmin):
     list_display = ('pk', 'title', 'slug', 'description')
-    list_editable = ('title', 'slug',)
     search_fields = ('text',)
     list_filter = ('title', 'slug',)
 
 
 admin.site.register(Post, PostAdmin)
-
 admin.site.register(Group, GroupAdmin)
