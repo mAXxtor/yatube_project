@@ -1,3 +1,4 @@
+from multiprocessing import context
 from django.conf import settings
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
@@ -48,3 +49,11 @@ def post_detail(request, post_id):
         'post': post,
     }
     return render(request, 'posts/post_detail.html', context)
+
+
+def post_create(request):
+    context = {
+        
+    }
+    return render(request, '', context)
+

@@ -9,4 +9,5 @@ urlpatterns = [
     path('group/<slug:slug>/', views.group_posts, name='group_list'),
     path('profile/<str:author>/', views.profile, name='profile'),
     path('posts/<int:post_id>/', views.post_detail, name='post_detail'),
+    path('create/', views.post_create, name='post_create'),
 ]
