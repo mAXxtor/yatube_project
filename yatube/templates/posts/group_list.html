@@ -1,20 +1,28 @@
 {% extends 'base.html' %}
-{% block title %} Записи сообщества {{ group.title }} {% endblock %}
+{% block title %} Публикации сообщества {{ group.title }} {% endblock %}
 {% block content %}
   <div class="container py-5">
-    <h1>Последние записи группы {{ group.title }}</h1>
+    <h1>Последние публикации сообщества {{ group.title }}</h1>
     <p class="font-weight-light">{{ group.description|linebreaks }}</p>
     {% for post in page_obj %}
       <article>
         <ul>
           <li>
-            Автор: {{ post.author.get_full_name }}
+            Автор: <a href="{% url 'posts:profile' post.author %}">{{ post.author.get_full_name }}</a>
           </li>
           <li>
             Дата публикации: {{ post.pub_date|date:"d E Y" }}
           </li>
         </ul>
         <p>{{ post.text|linebreaks }}</p>
+        <a href="{% url 'posts:post_detail' post.pk %}">подробная информация</a>
+        <p>
+          {% if post.group %}
+            <a href="{% url 'posts:group_list' post.group.slug %}">#{{ post.group.title }}</a>
+          {% else %}
+            <span style='color: red'>Этой публикации нет ни в одном сообществе.</span>
+          {% endif %}
+          </p>
       </article>
       {% if not forloop.last %}<hr>{% endif %}
     {% endfor %} 

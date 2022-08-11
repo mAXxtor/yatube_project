@@ -19,7 +19,7 @@ class Post(models.Model):
         null=True,
         on_delete=models.SET_NULL,
         related_name='posts',
-        verbose_name='Сообщество'
+        verbose_name='Сообщество',
     )
 
     class Meta:

@@ -1,8 +1,10 @@
-from multiprocessing import context
 from django.conf import settings
+from django.contrib.auth. decorators import login_required
 from django.core.paginator import Paginator
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
 
+
+from .forms import PostForm
 from .models import Group, Post, User
 
 
@@ -31,7 +33,7 @@ def group_posts(request, slug):
 
 def profile(request, author):
     author = get_object_or_404(User, username=author)
-    profile_posts = Post.objects.filter(author=author)
+    profile_posts = author.posts.select_related('author')
     paginator = Paginator(profile_posts, settings.NUMBER_OF_POSTS)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -51,9 +53,29 @@ def post_detail(request, post_id):
     return render(request, 'posts/post_detail.html', context)
 
 
+@login_required
 def post_create(request):
-    context = {
-        
-    }
-    return render(request, '', context)
+    if request.method == 'POST':
+        form = PostForm(request.POST)
+        if form.is_valid():
+            post = form.save(commit=False)
+            post.author = request.user
+            post.save()
+            return redirect('posts:profile', post.author)
+        return render(request, 'posts/create_post.html', {'form': form})
+    form = PostForm()
+    return render(request, 'posts/create_post.html', {'form': form})
 
+
+@login_required
+def post_edit(request, post_id):
+    post = get_object_or_404(Post, pk=post_id)
+    if post.author == request.user:
+        form = PostForm(request.POST, instance=post)
+        if form.is_valid():
+            post = form.save()
+            return redirect('posts:post_detail', post_id)
+        form = PostForm(instance=post)
+        return render(request, 'posts/create_post.html',
+                      context={'form': form, 'post': post})
+    return redirect('posts:post_detail')
