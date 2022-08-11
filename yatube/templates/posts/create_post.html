@@ -1,10 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}
-  {% if post %}
-    Редактировать публикацию
-  {% else %}
-    Новая публикация
-  {% endif %}
+  {% if form.instance.pk %}Редактировать публикацию{% else %}Новая публикация{% endif %}
 {% endblock title %}
 {% block content %}
   <div class="container py-5">
@@ -12,45 +8,20 @@
       <div class="col-md-8 p-5">
         <div class="card">
           <div class="card-header">
-            {% if post %}
-              Редактировать публикацию
-            {% else %}
-              Новая публикация
-            {% endif %}
+            {% if form.instance.pk %}Редактировать публикацию{% else %}Новая публикация{% endif %}
           </div>
           <div class="card-body">
-            {% if post %}  
-              <form method="post" action="{% url 'posts:post_edit' post.pk %}">
+            {% include 'includes/errors.html' %}
+            {% if form.instance.pk %}  
+              <form method="post" action="{% url 'posts:post_edit' form.instance.pk %}">
             {% else %}   
               <form method="post" action="{% url 'posts:post_create' %}">
             {% endif %}
             {% csrf_token %}
-              <div class="form-group row my-3 p-3">
-                <label for="id_text">
-                  Текст публикации
-                  <span class="required text-danger" >*</span>
-                </label>
-                {{ form.text }}
-                <small id="id_text-help" class="form-text text-muted">
-                  Текст новой публикации
-                </small>
-              </div>
-              <div class="form-group row my-3 p-3">
-                <label for="id_group">
-                  Сообщество
-                </label>
-                {{ form.group }}
-                <small id="id_group-help" class="form-text text-muted">
-                  Сообщество, к которой будет относиться публикация
-                </small>
-              </div>
+            {% include 'includes/user_form.html' %}
               <div class="d-flex justify-content-end">
                 <button type="submit" class="btn btn-primary">
-                  {% if post %}
-                    Сохранить
-                  {% else %}
-                    Добавить
-                  {% endif %}
+                  {% if form.instance.pk %}Сохранить{% else %}Добавить{% endif %}
                 </button>
               </div>
             </form>
