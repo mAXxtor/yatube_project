@@ -1,8 +1,7 @@
 <article>
-  {% with request.resolver_match.view_name as view_name %}
   <ul>
     <li>
-      Автор: <a {% if not view_name  == 'posts:profile' %}href="{% url 'posts:profile' post.author %}"{% endif %}>{{ post.author.get_full_name }}</a>
+      Автор: <a {% if not author %}href="{% url 'posts:profile' post.author %}"{% endif %}>{{ post.author.get_full_name }}</a>
     </li>
     <li>
       Дата публикации: {{ post.pub_date|date:"d E Y" }}
@@ -10,7 +9,7 @@
   </ul>
   <p>{{ post.text|linebreaks }}</p>
   <a href="{% url 'posts:post_detail' post.pk %}">подробная информация</a>
-  {% if not view_name  == 'posts:group_list' %}
+  {% if not group %}
     <p>
       {% if post.group %}
         <a href="{% url 'posts:group_list' post.group.slug %}">#{{ post.group.title }}</a>
@@ -19,5 +18,4 @@
       {% endif %}
     </p>
   {% endif %}
-  {% endwith %}
 </article>
