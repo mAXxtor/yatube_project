@@ -5,7 +5,8 @@ User = get_user_model()
 
 
 class Post(models.Model):
-    text = models.TextField('Текст публикации')
+    text = models.TextField('Текст публикации',
+                            help_text='Введите текст публикации')
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     author = models.ForeignKey(
         User,
@@ -20,6 +21,7 @@ class Post(models.Model):
         on_delete=models.SET_NULL,
         related_name='posts',
         verbose_name='Сообщество',
+        help_text='Сообщество, к которому будет относиться публикация'
     )
 
     class Meta:
@@ -28,7 +30,7 @@ class Post(models.Model):
         verbose_name_plural = 'Публикации'
 
     def __str__(self):
-        return self.text[:30]
+        return self.text[:15]
 
 
 class Group(models.Model):

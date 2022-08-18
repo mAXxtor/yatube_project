@@ -27,6 +27,7 @@ def profile(request, author):
     profile_posts = author.posts.select_related('group')
     context = {
         'author': author,
+        'profile_posts': profile_posts,
         'page_obj': utils.paginator(request, profile_posts)
     }
     return render(request, 'posts/profile.html', context)
