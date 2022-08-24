@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
+from django.urls import reverse
 from http import HTTPStatus
 
 from posts.models import Group, Post
@@ -23,80 +24,92 @@ class UsersURLTests(TestCase):
         )
 
     def setUp(self):
-        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
-
-    def test_public_users_urls_exists_at_desired_location(self):
-        """Проверка доступности страниц приложения users для
-        неавторизованных пользователей.
-        """
-        urls_status_codes = {
-            '/auth/signup/': HTTPStatus.OK.value,
-            '/auth/login/': HTTPStatus.OK.value,
-            '/auth/password_reset/': HTTPStatus.OK.value,
-            '/auth/password_reset/done/': HTTPStatus.OK.value,
-            '/auth/reset/some_uidb64/some_token/': HTTPStatus.OK.value,
-            '/auth/reset/done/': HTTPStatus.OK.value,
-            '/auth/logout/': HTTPStatus.OK.value,
-        }
-        for url, status in urls_status_codes.items():
-            with self.subTest(url=url):
-                self.assertEqual(
-                    self.guest_client.get(url).status_code, status)
-
-    def test_password_change_url_exists_authorized_at_desired_location(self):
-        """Проверка доступности страницы /password_change/ авторизованному
-        пользователю.
-        """
-        self.assertEqual(
-            self.authorized_client.get('/auth/password_change/').status_code,
-            HTTPStatus.OK.value
+        self.reverse_names = (
+            ('users:signup', None),
+            ('users:login', None),
+            ('users:password_change', None),
+            ('users:password_change_done', None),
+            ('users:password_reset_form', None),
+            ('users:password_reset_done', None),
+            ('users:password_reset_confirm', ('uidb64', 'token',)),
+            ('users:password_reset_complete', None),
+            ('users:logout', None),
         )
 
-    def test_password_change_done_url_exists_authorized(self):
-        """Проверка доступности страницы /password_change/done/ авторизованному
-        пользователю.
-        """
-        self.assertEqual(
-            self.authorized_client.get(
-                '/auth/password_change/done/').status_code,
-            HTTPStatus.OK.value
+    def test_users_namespaces_uses_correct_template(self):
+        """Проверка шаблонов для namespaces приложения users."""
+        reverse_names_templates = (
+            ('users:signup', None, 'users/signup.html'),
+            ('users:login', None, 'users/login.html'),
+            ('users:password_change', None,
+                'users/password_change_form.html'),
+            ('users:password_change_done', None,
+                'users/password_change_done.html'),
+            ('users:password_reset_form', None,
+                'users/password_reset_form.html'),
+            ('users:password_reset_done', None,
+                'users/password_reset_done.html'),
+            ('users:password_reset_confirm', ('uidb64', 'token',),
+                'users/password_reset_confirm.html'),
+            ('users:password_reset_complete', None,
+                'users/password_reset_complete.html'),
+            ('users:logout', None, 'users/logged_out.html'),
         )
-
-    def test_password_change_url_redirect_anonymous_on_login(self):
-        """Страница по адресу /password_change/ перенаправит анонимного
-        пользователя на страницу логина.
-        """
-        self.assertRedirects(
-            self.guest_client.get('/auth/password_change/', follow=True),
-            '/auth/login/?next=/auth/password_change/'
-        )
-
-    def test_password_change_done_url_redirect_anonymous_on_login(self):
-        """Страница по адресу /password_change/done/ перенаправит анонимного
-        пользователя на страницу логина.
-        """
-        self.assertRedirects(
-            self.guest_client.get('/auth/password_change/done/', follow=True),
-            ('/auth/login/?next=/auth/password_change/done/')
-        )
-
-    def test_users_url_uses_correct_template(self):
-        """Проверка шаблонов для адресов приложения users."""
-        urls_templates_names = {
-            '/auth/signup/': 'users/signup.html',
-            '/auth/login/': 'users/login.html',
-            '/auth/password_change/': 'users/password_change_form.html',
-            '/auth/password_change/done/': 'users/password_change_done.html',
-            '/auth/password_reset/': 'users/password_reset_form.html',
-            '/auth/password_reset/done/': 'users/password_reset_done.html',
-            '/auth/reset/some_uidb64/some_token/':
-                'users/password_reset_confirm.html',
-            '/auth/reset/done/': 'users/password_reset_complete.html',
-            '/auth/logout/': 'users/logged_out.html',
-        }
-        for url, template in urls_templates_names.items():
-            with self.subTest(url=url):
+        for reverse_name, args, template in reverse_names_templates:
+            with self.subTest(reverse_name=reverse_name):
                 self.assertTemplateUsed(
-                    self.authorized_client.get(url), template)
+                    self.authorized_client.get(reverse(
+                        reverse_name, args=args)), template)
+
+    def test_users_namespaces_matches_correct_urls(self):
+        """Проверка namespaces совпадают с hardcod urls приложения users."""
+        reverse_names_urls = (
+            ('users:signup', None, '/auth/signup/'),
+            ('users:login', None, '/auth/login/'),
+            ('users:password_change', None, '/auth/password_change/'),
+            ('users:password_change_done', None,
+                '/auth/password_change/done/'),
+            ('users:password_reset_form', None, '/auth/password_reset/'),
+            ('users:password_reset_done', None, '/auth/password_reset/done/'),
+            ('users:password_reset_confirm', ('uidb64', 'token',),
+                '/auth/reset/uidb64/token/'),
+            ('users:password_reset_complete', None, '/auth/reset/done/'),
+            ('users:logout', None, '/auth/logout/'),
+        )
+        for reverse_name, args, url in reverse_names_urls:
+            with self.subTest(reverse_name=reverse_name):
+                self.assertEqual(reverse(reverse_name, args=args), url)
+
+    def test_users_pages_available_for_anonymous_and_redirects(self):
+        """Проверка доступности страниц приложения users для
+        неавторизованных пользователей. Если password_change или
+        password_change_done, то редирект на login.
+        """
+        for reverse_name, args in self.reverse_names:
+            with self.subTest(reverse_name=reverse_name):
+                if reverse_name in ['users:password_change',
+                                    'users:password_change_done']:
+                    redirect_to_login = '/auth/login/?next='
+                    redirect_reverse_name = reverse(reverse_name, args=args)
+                    self.assertRedirects(
+                        self.client.get(reverse(
+                            reverse_name, args=args), follow=True),
+                        f'{redirect_to_login}{redirect_reverse_name}')
+                else:
+                    self.assertEqual(
+                        self.client.get(reverse(
+                            reverse_name, args=args)).status_code,
+                        HTTPStatus.OK.value)
+
+    def test_users_pages_available_for_authorized(self):
+        """Проверка доступности страниц приложения users для
+        авторизованных пользователей.
+        """
+        for reverse_name, args in self.reverse_names:
+            with self.subTest(reverse_name=reverse_name):
+                self.assertEqual(
+                    self.authorized_client.get(reverse(
+                        reverse_name, args=args)).status_code,
+                    HTTPStatus.OK.value)

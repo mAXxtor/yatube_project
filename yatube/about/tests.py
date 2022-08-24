@@ -1,57 +1,40 @@
-from django.test import Client, TestCase
+from django.test import TestCase
 from django.urls import reverse
 from http import HTTPStatus
 
 
 class StaticURLTests(TestCase):
-    def setUp(self):
-        self.guest_client = Client()
-
-    def test_about_url_exists_at_desired_location(self):
-        """Проверка доступности адресов приложения about."""
-        url_status_codes = {
-            '/about/author/': HTTPStatus.OK.value,
-            '/about/tech/': HTTPStatus.OK.value,
-        }
-        for url, status in url_status_codes.items():
-            with self.subTest(url=url):
-                response = self.guest_client.get(url)
-                self.assertEqual(response.status_code, status)
-
-    def test_about_url_uses_correct_template(self):
-        """Проверка шаблонов для адресов приложения about."""
-        urls_templates_names = {
-            '/about/author/': 'about/author.html',
-            '/about/tech/': 'about/tech.html',
-        }
-        for url, template in urls_templates_names.items():
-            with self.subTest(url=url):
+    def test_about_namespaces_uses_correct_template(self):
+        """Проверка шаблонов для namespaces приложения about."""
+        reverse_names_templates = (
+            ('about:author', None, 'about/author.html'),
+            ('about:tech', None, 'about/tech.html'),
+        )
+        for reverse_name, args, template in reverse_names_templates:
+            with self.subTest(reverse_name=reverse_name):
                 self.assertTemplateUsed(
-                    self.guest_client.get(url), template)
+                    self.client.get(reverse(
+                        reverse_name, args=args)), template)
 
+    def test_about_namespaces_matches_correct_urls(self):
+        """Проверка namespaces совпадают с hardcod urls приложения about."""
+        reverse_names_urls = (
+            ('about:author', None, '/about/author/'),
+            ('about:tech', None, '/about/tech/'),
+        )
+        for reverse_name, args, url in reverse_names_urls:
+            with self.subTest(reverse_name=reverse_name):
+                self.assertEqual(reverse(reverse_name, args=args), url)
 
-class StaticViewsTests(TestCase):
-    def setUp(self):
-        self.guest_client = Client()
-
-    def test_about_page_accessible_by_name(self):
-        """URL, генерируемый при помощи namespace, доступен."""
-        names_status_codes = {
-            reverse('about:author'): HTTPStatus.OK.value,
-            reverse('about:tech'): HTTPStatus.OK.value,
-        }
-        for name, status in names_status_codes.items():
-            with self.subTest(name=name):
+    def test_about_namespaces_exists_at_desired_location(self):
+        """Проверка доступности страниц приложения about."""
+        reverse_names = (
+            ('about:author', None),
+            ('about:tech', None),
+        )
+        for reverse_name, args in reverse_names:
+            with self.subTest(reverse_name=reverse_name):
                 self.assertEqual(
-                    self.guest_client.get(name).status_code, status)
-
-    def test_about_page_uses_correct_template(self):
-        """При запросе к about
-        применяются корректные шаблоны."""
-        names_templates = {
-            reverse('about:author'): 'about/author.html',
-            reverse('about:tech'): 'about/tech.html',
-        }
-        for name, template in names_templates.items():
-            with self.subTest(name=name):
-                self.assertTemplateUsed(self.guest_client.get(name), template)
+                    self.client.get(reverse(
+                        reverse_name, args=args)).status_code,
+                    HTTPStatus.OK.value)
