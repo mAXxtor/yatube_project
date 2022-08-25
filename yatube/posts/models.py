@@ -5,8 +5,10 @@ User = get_user_model()
 
 
 class Post(models.Model):
-    text = models.TextField('Текст публикации',
-                            help_text='Введите текст публикации')
+    text = models.TextField(
+        'Текст публикации',
+        help_text='Введите текст публикации'
+    )
     pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
     author = models.ForeignKey(
         User,
@@ -22,6 +24,12 @@ class Post(models.Model):
         related_name='posts',
         verbose_name='Сообщество',
         help_text='Сообщество, к которому будет относиться публикация'
+    )
+    image = models.ImageField(
+        'Изображение',
+        upload_to='posts/',
+        blank=True,
+        help_text='Добавьте изображение'
     )
 
     class Meta:

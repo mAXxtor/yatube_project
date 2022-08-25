@@ -1,6 +1,10 @@
+import shutil
+import tempfile
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, override_settings, TestCase
 from django.urls import reverse
 from django import forms
 
@@ -8,8 +12,10 @@ from ..forms import PostForm
 from ..models import Group, Post
 
 User = get_user_model()
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostsViewTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -20,11 +26,29 @@ class PostsViewTests(TestCase):
             slug='test_slug',
             description='Тестовое описание',
         )
+        test_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00'
+            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
+            b'\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        uploaded = SimpleUploadedFile(
+            name='test.gif',
+            content=test_gif,
+            content_type='image/gif'
+        )
         cls.post = Post.objects.create(
             author=cls.user,
             text='Тестовая публикация',
             group=cls.group,
+            image=uploaded,
         )
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):
         self.authorized_client = Client()
@@ -40,6 +64,7 @@ class PostsViewTests(TestCase):
             context.pub_date: self.post.pub_date,
             context.text: self.post.text,
             context.group: self.post.group,
+            context.image: self.post.image,
         }
         for value, expected in context_fields.items():
             with self.subTest(value=value):
@@ -112,6 +137,7 @@ class PostsViewTests(TestCase):
                 form_fields = {
                     'text': forms.fields.CharField,
                     'group': forms.fields.ChoiceField,
+                    'image': forms.fields.ImageField,
                 }
                 for value, expected in form_fields.items():
                     with self.subTest(value=value):

@@ -1,5 +1,10 @@
+import shutil
+import tempfile
+
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, override_settings, TestCase
 from django.urls import reverse
 from http import HTTPStatus
 
@@ -7,8 +12,10 @@ from ..models import Group, Post
 from ..forms import PostForm
 
 User = get_user_model()
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostCreateFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -26,6 +33,11 @@ class PostCreateFormTests(TestCase):
         )
         cls.form = PostForm()
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
@@ -33,9 +45,22 @@ class PostCreateFormTests(TestCase):
     def test_create_post(self):
         """Валидная форма создает запись в Posts."""
         Post.objects.all().delete()
+        test_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00'
+            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
+            b'\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        uploaded = SimpleUploadedFile(
+            name='test.gif',
+            content=test_gif,
+            content_type='image/gif'
+        )
         form_data = {
             'text': 'Тестовая публикация',
             'group': self.group.id,
+            'image': uploaded,
         }
         self.assertEqual(Post.objects.count(), 0)
         response = self.authorized_client.post(
@@ -53,12 +78,15 @@ class PostCreateFormTests(TestCase):
                          'Сообщество редактируемой публикации не совпадает')
         self.assertEqual(post.text, form_data['text'],
                          'Текст редактируемой публикации не совпадает')
+        self.assertEqual(post.image.name, f'posts/{form_data["image"].name}',
+                         'Изображение редактируемой публикации не совпадает')
 
     def test_create_post_form_fields_label(self):
         """Проверка label полей формы создания публикации."""
         title_labels_forms = {
             self.form.fields['text'].label: 'Текст публикации',
             self.form.fields['group'].label: 'Сообщество',
+            self.form.fields['image'].label: 'Изображение',
         }
         for label, form in title_labels_forms.items():
             with self.subTest(label=label):
@@ -70,6 +98,7 @@ class PostCreateFormTests(TestCase):
             self.form.fields['text'].help_text: 'Введите текст публикации',
             self.form.fields['group'].help_text:
                 'Сообщество, к которому будет относиться публикация',
+            self.form.fields['image'].help_text: 'Добавьте изображение',
         }
         for help_text, form in help_texts_forms.items():
             with self.subTest(help_text=help_text):
@@ -79,6 +108,18 @@ class PostCreateFormTests(TestCase):
         """При отправке валидной формы со страницы редактирования публикации
         происходит изменение поста с post_id в базе данных.
         """
+        test_gif = (
+            b'\x47\x49\x46\x38\x39\x61\x01\x00'
+            b'\x01\x00\x00\x00\x00\x21\xf9\x04'
+            b'\x01\x0a\x00\x01\x00\x2c\x00\x00'
+            b'\x00\x00\x01\x00\x01\x00\x00\x02'
+            b'\x02\x4c\x01\x00\x3b'
+        )
+        uploaded = SimpleUploadedFile(
+            name='test2.gif',
+            content=test_gif,
+            content_type='image/gif'
+        )
         group2 = Group.objects.create(
             title='Тестовая группа 2',
             slug='test_slug2',
@@ -89,6 +130,7 @@ class PostCreateFormTests(TestCase):
         form_data = {
             'text': 'Публикация 2 отредактирована',
             'group': group2.id,
+            'image': uploaded,
         }
         self.authorized_client.post(
             reverse('posts:post_edit', args=(self.post.id,)),
@@ -104,6 +146,8 @@ class PostCreateFormTests(TestCase):
                          'Сообщество редактируемой публикации не совпадает')
         self.assertEqual(post.text, form_data['text'],
                          'Текст редактируемой публикации не совпадает')
+        self.assertEqual(post.image.name, f'posts/{form_data["image"].name}',
+                         'Изображение редактируемой публикации не совпадает')
         # Проверка доступности старой группы после редактирования публикации
         self.assertEqual(self.client.get(
             reverse('posts:group_list', args=(self.group.slug,))).status_code,
