@@ -35,10 +35,12 @@ def profile(request, author):
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
-    comment = get_object_or_404(Comment, post=post_id)
+    form = CommentForm(request.POST or None)
+    comments = post.comments.select_related('author', 'post')
     context = {
         'post': post,
-        'comment': comment,
+        'form': form,
+        'comments': comments,
     }
     return render(request, 'posts/post_detail.html', context)
 
