@@ -8,7 +8,7 @@ from django.test import Client, override_settings, TestCase
 from django.urls import reverse
 from http import HTTPStatus
 
-from ..models import Group, Post
+from ..models import Comment, Group, Post
 from ..forms import PostForm
 
 User = get_user_model()
@@ -175,3 +175,39 @@ class PostCreateFormTests(TestCase):
         )
         # Проверка, что количество публикаций не изменилось
         self.assertEqual(Post.objects.count(), 1)
+
+    def test_comment_create_unavailable_by_anonymous(self):
+        """При отправке валидной формы создания комментария
+        неавторизованным пользователем добавление в БД не происходит.
+        """
+        # Проверка, что комментариев нет
+        self.assertEqual(Comment.objects.count(), 0)
+        form_data = {
+            'text': 'Тестовый комментарий',
+        }
+        self.client.post(
+            reverse('posts:add_comment', args=(self.post.id,)),
+            data=form_data,
+            follow=True
+        )
+        print(self.post.comments)
+        # Проверка, что количество комментариев не изменилось
+        self.assertEqual(Comment.objects.count(), 0)
+
+    def test_comment_create_available_by_authorized(self):
+        """При отправке валидной формы создания комментария
+        авторизованным пользователем происходит добавление в БД.
+        """
+        # Проверка, что комментариев нет
+        self.assertEqual(Comment.objects.count(), 0)
+        form_data = {
+            'text': 'Тестовый комментарий',
+        }
+        self.authorized_client.post(
+            reverse('posts:add_comment', args=(self.post.id,)),
+            data=form_data,
+            follow=True
+        )
+        print(self.post.comments)
+        # Проверка, что количество комментарий добавился
+        self.assertEqual(Comment.objects.count(), 1)

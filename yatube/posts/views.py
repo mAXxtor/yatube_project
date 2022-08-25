@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from . import utils
 from .forms import CommentForm, PostForm
-from .models import Comment, Group, Post, User
+from .models import Group, Post, User
 
 
 def index(request):
