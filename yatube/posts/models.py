@@ -9,7 +9,11 @@ class Post(models.Model):
         'Текст публикации',
         help_text='Введите текст публикации'
     )
-    pub_date = models.DateTimeField('Дата публикации', auto_now_add=True)
+    pub_date = models.DateTimeField(
+        'Дата публикации',
+        auto_now_add=True,
+        db_index=True,
+    )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

@@ -162,7 +162,6 @@ class PostCreateFormTests(TestCase):
         """При отправке валидной формы со страницы создания публикации
         неавторизованным пользователем добавление в БД не происходит.
         """
-        # Проверка, что публикация одна
         self.assertEqual(Post.objects.count(), 1)
         form_data = {
             'text': 'Публикация 2',
@@ -173,14 +172,12 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        # Проверка, что количество публикаций не изменилось
         self.assertEqual(Post.objects.count(), 1)
 
     def test_comment_create_unavailable_by_anonymous(self):
         """При отправке валидной формы создания комментария
         неавторизованным пользователем добавление в БД не происходит.
         """
-        # Проверка, что комментариев нет
         self.assertEqual(Comment.objects.count(), 0)
         form_data = {
             'text': 'Тестовый комментарий',
@@ -191,14 +188,12 @@ class PostCreateFormTests(TestCase):
             follow=True
         )
         print(self.post.comments)
-        # Проверка, что количество комментариев не изменилось
         self.assertEqual(Comment.objects.count(), 0)
 
     def test_comment_create_available_by_authorized(self):
         """При отправке валидной формы создания комментария
         авторизованным пользователем происходит добавление в БД.
         """
-        # Проверка, что комментариев нет
         self.assertEqual(Comment.objects.count(), 0)
         form_data = {
             'text': 'Тестовый комментарий',
@@ -209,5 +204,4 @@ class PostCreateFormTests(TestCase):
             follow=True
         )
         print(self.post.comments)
-        # Проверка, что количество комментарий добавился
         self.assertEqual(Comment.objects.count(), 1)

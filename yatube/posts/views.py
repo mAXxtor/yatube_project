@@ -1,11 +1,15 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import cache_page
 
 from . import utils
 from .forms import CommentForm, PostForm
 from .models import Group, Post, User
 
+CACHE_TTL=20
 
+
+@cache_page(CACHE_TTL, key_prefix='index_page')
 def index(request):
     posts = Post.objects.select_related('author', 'group').all()
     context = {'page_obj': utils.paginator(request, posts)}

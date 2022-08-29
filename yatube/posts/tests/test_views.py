@@ -3,6 +3,7 @@ import tempfile
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, override_settings, TestCase
 from django.urls import reverse
@@ -53,6 +54,7 @@ class PostsViewTests(TestCase):
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        cache.clear()
 
     def post_view_test(self, request, bool=False):
         if bool is True:
@@ -169,6 +171,19 @@ class PostsViewTests(TestCase):
         response = self.client.get(
             reverse('posts:group_list', args=(self.group.slug,)))
         self.assertEqual(len(response.context['page_obj']), 1)
+
+    def test_index_page_show_correct_context(self):
+        """Проверка cache страницы index."""
+        cached_response_content = self.authorized_client.get(
+            reverse('posts:index'))
+        self.assertEqual(Post.objects.count(), 1)
+        Post.objects.all().delete()
+        self.assertEqual(Post.objects.count(), 0)
+        self.assertEqual(cached_response_content.content, self.authorized_client.get(
+            reverse('posts:index')).content)
+        cache.clear()
+        self.assertNotEqual(cached_response_content.content, self.authorized_client.get(
+            reverse('posts:index')).content)
 
 
 class PaginatorViewsTest(TestCase):
