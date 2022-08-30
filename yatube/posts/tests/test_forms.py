@@ -187,7 +187,6 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        print(self.post.comments)
         self.assertEqual(Comment.objects.count(), 0)
 
     def test_comment_create_available_by_authorized(self):
@@ -203,5 +202,4 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        print(self.post.comments)
         self.assertEqual(Comment.objects.count(), 1)

@@ -3,7 +3,7 @@ from django.test import Client, TestCase
 from django.urls import reverse
 from http import HTTPStatus
 
-from ..models import Group, Post
+from ..models import Comment, Group, Post
 
 User = get_user_model()
 
@@ -21,6 +21,11 @@ class PostsURLTests(TestCase):
         cls.post = Post.objects.create(
             author=cls.user,
             text='Тестовый пост',
+        )
+        cls.comment = Comment.objects.create(
+            post= cls.post,
+            author= cls.user,
+            text= 'Тестовый комментарий',
         )
 
     def setUp(self):
@@ -51,11 +56,17 @@ class PostsURLTests(TestCase):
                     self.authorized_client.get(reverse(
                         reverse_name, args=args)), template)
 
-    def test_404_page(self):
-        """Проверка страницы 404."""
+    def test_404_page_available(self):
+        """Проверка доступности страницы 404."""
         self.assertEqual(
             self.client.get('unexisting_page/').status_code,
             HTTPStatus.NOT_FOUND.value)
+
+    def test_404_page_uses_correct_template(self):
+        """Страница 404 использует кастомный шаблон."""
+        self.assertTemplateUsed(
+            self.client.get('unexisting_page/'),
+            'core/404.html')
 
     def test_posts_namespaces_matches_correct_urls(self):
         """Проверка namespaces совпадают с hardcod urls приложения posts."""
