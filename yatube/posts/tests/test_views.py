@@ -201,7 +201,7 @@ class PostsViewTests(TestCase):
             reverse('posts:profile_unfollow', args=(user2.username,)))
         self.assertEqual(Follow.objects.count(), 0)
 
-    def test_authorized_can_unsubscribe_authors(self):
+    def test_user_cannot_follow_yourself(self):
         """Проверка невозможности подписки пользователя на самого себя."""
         Follow.objects.all().delete()
         self.assertEqual(Follow.objects.count(), 0)
@@ -209,7 +209,19 @@ class PostsViewTests(TestCase):
             reverse('posts:profile_follow', args=(self.user.username,)))
         self.assertEqual(Follow.objects.count(), 0)
 
-    def test_authorized_can_unsubscribe_authors(self):
+    def test_user_cannot_follow_author_twice(self):
+        """Проверка невозможности повторной подписки на автора."""
+        user2 = User.objects.create_user(username='test')
+        Follow.objects.all().delete()
+        self.assertEqual(Follow.objects.count(), 0)
+        self.authorized_client.get(
+            reverse('posts:profile_follow', args=(user2.username,)))
+        self.assertEqual(Follow.objects.count(), 1)
+        self.authorized_client.get(
+            reverse('posts:profile_follow', args=(user2.username,)))
+        self.assertEqual(Follow.objects.count(), 1)
+
+    def test_follow_index_working_correctly(self):
         """Новая запись пользователя появляется в ленте тех, 
         кто на него подписан и не появляется в ленте тех, кто не подписан.
         """
