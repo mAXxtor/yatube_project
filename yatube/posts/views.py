@@ -48,7 +48,7 @@ def profile(request, author):
 def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     form = CommentForm(request.POST or None)
-    comments = post.comments.select_related('author', 'group')
+    comments = post.comments.select_related('author')
     context = {
         'post': post,
         'form': form,
@@ -94,8 +94,11 @@ def add_comment(request, post_id):
 @login_required
 def follow_index(request):
     followed_posts = Post.objects.filter(author__following__user=request.user)
-    context = {'page_obj': utils.paginator(request, followed_posts)}
-    return render(request, 'posts/follow.html', context)
+    return render(
+        request,
+        'posts/follow.html',
+        {'page_obj': utils.paginator(request, followed_posts)}
+    )
 
 @login_required
 def profile_follow(request, username):

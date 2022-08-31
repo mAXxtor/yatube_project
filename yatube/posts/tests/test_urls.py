@@ -38,6 +38,7 @@ class PostsURLTests(TestCase):
             ('posts:post_detail', (self.post.id,)),
             ('posts:post_create', None),
             ('posts:post_edit', (self.post.id,)),
+            ('posts:follow_index', None),
         )
 
     def test_post_namespaces_uses_correct_template(self):
@@ -49,6 +50,7 @@ class PostsURLTests(TestCase):
             ('posts:post_detail', (self.post.id,), 'posts/post_detail.html'),
             ('posts:post_create', None, 'posts/create_post.html'),
             ('posts:post_edit', (self.post.id,), 'posts/create_post.html'),
+            ('posts:follow_index', None, 'posts/follow.html'),
         )
         for reverse_name, args, template in reverse_names_templates:
             with self.subTest(reverse_name=reverse_name):
@@ -80,6 +82,7 @@ class PostsURLTests(TestCase):
             ('posts:post_create', None, '/create/'),
             ('posts:post_edit', (self.post.id,),
                 f'/posts/{self.post.id}/edit/'),
+            ('posts:follow_index', None, '/follow/'),
         )
         for reverse_name, args, url in reverse_names_urls:
             with self.subTest(reverse_name=reverse_name):
@@ -99,24 +102,24 @@ class PostsURLTests(TestCase):
         Если post_edit то редирект на post_detail.
         """
         user2 = User.objects.create_user(username='test_user')
-        self.authorized_client2 = Client()
-        self.authorized_client2.force_login(user2)
+        self.authorized_client.force_login(user2)
         for reverse_name, args in self.reverse_names:
             with self.subTest(reverse_name=reverse_name):
                 if reverse_name == 'posts:post_edit':
                     self.assertRedirects(
-                        self.authorized_client2.get(
+                        self.authorized_client.get(
                             reverse(reverse_name, args=args), follow=True),
                         reverse('posts:post_detail', args=(self.post.id,)))
                 else:
                     self.assertEqual(
-                        self.authorized_client2.get(reverse(
+                        self.authorized_client.get(reverse(
                             reverse_name, args=args)).status_code,
                         HTTPStatus.OK.value)
 
     def test_posts_names_available_for_anonymous_and_redirects(self):
         """Проверка доступности страниц для неавторизоавнного пользователя.
-        Если post_create или post_edit то редирект на login.
+        Если post_create или post_edit то редирект на login. Если follow_index
+        то 302 статус.
         """
         for reverse_name, args in self.reverse_names:
             with self.subTest(reverse_name=reverse_name):
@@ -127,6 +130,10 @@ class PostsURLTests(TestCase):
                         self.client.get(
                             reverse(reverse_name, args=args), follow=True),
                         f'{redirect_to_login}?next={redirect_reverse_name}')
+                elif reverse_name == 'posts:follow_index':
+                    self.assertEqual(self.client.get(
+                        reverse(reverse_name, args=args)).status_code,
+                        HTTPStatus.FOUND.value)
                 else:
                     self.assertEqual(self.client.get(
                         reverse(reverse_name, args=args)).status_code,

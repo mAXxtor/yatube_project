@@ -10,7 +10,7 @@ from django.urls import reverse
 from django import forms
 
 from ..forms import PostForm
-from ..models import Group, Post
+from ..models import Follow, Group, Post
 
 User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
@@ -184,6 +184,49 @@ class PostsViewTests(TestCase):
         cache.clear()
         self.assertNotEqual(cached_response_content.content, self.authorized_client.get(
             reverse('posts:index')).content)
+
+    def test_authorized_can_follow_and_unfollow_authors(self):
+        """Авторизованный пользователь может подписываться на других пользователей
+        и удалять из подписок.
+        """
+        user2 = User.objects.create_user(username='test')
+        Follow.objects.all().delete()
+        self.assertEqual(Follow.objects.count(), 0)
+        self.authorized_client.get(
+            reverse('posts:profile_follow', args=(user2.username,)))
+        self.assertEqual(Follow.objects.count(), 1)
+        self.assertEqual(Follow.objects.get(pk=1).user, self.user)
+        self.assertEqual(Follow.objects.get(pk=1).author, user2)
+        self.authorized_client.get(
+            reverse('posts:profile_unfollow', args=(user2.username,)))
+        self.assertEqual(Follow.objects.count(), 0)
+
+    def test_authorized_can_unsubscribe_authors(self):
+        """Проверка невозможности подписки пользователя на самого себя."""
+        Follow.objects.all().delete()
+        self.assertEqual(Follow.objects.count(), 0)
+        self.authorized_client.get(
+            reverse('posts:profile_follow', args=(self.user.username,)))
+        self.assertEqual(Follow.objects.count(), 0)
+
+    def test_authorized_can_unsubscribe_authors(self):
+        """Новая запись пользователя появляется в ленте тех, 
+        кто на него подписан и не появляется в ленте тех, кто не подписан.
+        """
+        user2 = User.objects.create_user(username='test')
+        self.authorized_client.force_login(user2)
+        Follow.objects.all().delete()
+        self.assertEqual(Follow.objects.count(), 0)
+        self.authorized_client.get(
+            reverse('posts:profile_follow', args=(self.user.username,)))
+        self.assertEqual(Follow.objects.count(), 1)
+        response = self.authorized_client.get(reverse('posts:follow_index'))
+        self.assertEqual(len(response.context['page_obj']), 1)
+        self.assertEqual(Follow.objects.get(pk=1).user, user2)
+        self.assertEqual(Follow.objects.get(pk=1).author, self.user)
+        self.authorized_client.force_login(self.user)
+        response = self.authorized_client.get(reverse('posts:follow_index'))
+        self.assertEqual(len(response.context['page_obj']), 0)
 
 
 class PaginatorViewsTest(TestCase):
