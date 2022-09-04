@@ -23,9 +23,9 @@ class PostsURLTests(TestCase):
             text='Тестовый пост',
         )
         cls.comment = Comment.objects.create(
-            post= cls.post,
-            author= cls.user,
-            text= 'Тестовый комментарий',
+            post=cls.post,
+            author=cls.user,
+            text='Тестовый комментарий',
         )
 
     def setUp(self):
@@ -38,7 +38,10 @@ class PostsURLTests(TestCase):
             ('posts:post_detail', (self.post.id,)),
             ('posts:post_create', None),
             ('posts:post_edit', (self.post.id,)),
+            ('posts:add_comment', (self.post.id,)),
             ('posts:follow_index', None),
+            ('posts:profile_follow', (self.user.username,)),
+            ('posts:profile_unfollow', (self.user.username,)),
         )
 
     def test_post_namespaces_uses_correct_template(self):
@@ -82,7 +85,13 @@ class PostsURLTests(TestCase):
             ('posts:post_create', None, '/create/'),
             ('posts:post_edit', (self.post.id,),
                 f'/posts/{self.post.id}/edit/'),
+            ('posts:add_comment', (self.post.id,),
+                f'/posts/{self.post.id}/comment/'),
             ('posts:follow_index', None, '/follow/'),
+            ('posts:profile_follow', (self.user.username,),
+                f'/profile/{self.user.username}/follow/'),
+            ('posts:profile_unfollow', (self.user.username,),
+                f'/profile/{self.user.username}/unfollow/'),
         )
         for reverse_name, args, url in reverse_names_urls:
             with self.subTest(reverse_name=reverse_name):
@@ -92,24 +101,47 @@ class PostsURLTests(TestCase):
         """Проверка доступности страниц для автора."""
         for reverse_name, args in self.reverse_names:
             with self.subTest(reverse_name=reverse_name):
-                self.assertEqual(
-                    self.authorized_client.get(reverse(
-                        reverse_name, args=args)).status_code,
-                    HTTPStatus.OK.value)
+                if reverse_name == 'posts:add_comment':
+                    self.assertRedirects(
+                        self.authorized_client.get(reverse(
+                            reverse_name, args=args), follow=True),
+                        reverse('posts:post_detail', args=(self.post.id,)))
+                elif reverse_name == 'posts:profile_follow':
+                    self.assertRedirects(
+                        self.authorized_client.get(reverse(
+                            reverse_name, args=args), follow=True),
+                        reverse('posts:profile', args=(self.user.username,)))
+                elif reverse_name == 'posts:profile_unfollow':
+                    self.assertEqual(
+                        self.authorized_client.get(reverse(
+                            reverse_name, args=args)).status_code,
+                        HTTPStatus.NOT_FOUND.value)
+                else:
+                    self.assertEqual(
+                        self.authorized_client.get(reverse(
+                            reverse_name, args=args)).status_code,
+                        HTTPStatus.OK.value)
 
     def test_posts_names_available_for_nonauthor_and_redirects(self):
         """Проверка доступности страниц для неавтора.
-        Если post_edit то редирект на post_detail.
+        Если post_edit, add_comment то редирект на post_detail.
+        Если profile_follow, profile_unfollow то редирект на profile.
         """
         user2 = User.objects.create_user(username='test_user')
         self.authorized_client.force_login(user2)
         for reverse_name, args in self.reverse_names:
             with self.subTest(reverse_name=reverse_name):
-                if reverse_name == 'posts:post_edit':
+                if reverse_name in ['posts:post_edit', 'posts:add_comment']:
                     self.assertRedirects(
                         self.authorized_client.get(
                             reverse(reverse_name, args=args), follow=True),
                         reverse('posts:post_detail', args=(self.post.id,)))
+                elif reverse_name in ['posts:profile_follow',
+                                      'posts:profile_unfollow']:
+                    self.assertRedirects(
+                        self.authorized_client.get(
+                            reverse(reverse_name, args=args), follow=True),
+                        reverse('posts:profile', args=(self.user.username,)))
                 else:
                     self.assertEqual(
                         self.authorized_client.get(reverse(
@@ -118,22 +150,24 @@ class PostsURLTests(TestCase):
 
     def test_posts_names_available_for_anonymous_and_redirects(self):
         """Проверка доступности страниц для неавторизоавнного пользователя.
-        Если post_create или post_edit то редирект на login. Если follow_index
+        Если post_create или post_edit - то редирект на login.
+        Если add_comment, follow_index, profile_follow, profile_unfollow -
         то 302 статус.
         """
         for reverse_name, args in self.reverse_names:
             with self.subTest(reverse_name=reverse_name):
-                if reverse_name in ['posts:post_create', 'posts:post_edit']:
+                if reverse_name in ['posts:post_create',
+                                    'posts:post_edit',
+                                    'posts:add_comment',
+                                    'posts:follow_index',
+                                    'posts:profile_follow',
+                                    'posts:profile_unfollow']:
                     redirect_to_login = reverse('users:login')
                     redirect_reverse_name = reverse(reverse_name, args=args)
                     self.assertRedirects(
                         self.client.get(
                             reverse(reverse_name, args=args), follow=True),
                         f'{redirect_to_login}?next={redirect_reverse_name}')
-                elif reverse_name == 'posts:follow_index':
-                    self.assertEqual(self.client.get(
-                        reverse(reverse_name, args=args)).status_code,
-                        HTTPStatus.FOUND.value)
                 else:
                     self.assertEqual(self.client.get(
                         reverse(reverse_name, args=args)).status_code,

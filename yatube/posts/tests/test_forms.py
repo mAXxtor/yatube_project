@@ -125,7 +125,6 @@ class PostCreateFormTests(TestCase):
             slug='test_slug2',
             description='Тестовое описание 2',
         )
-        # Проверка, что публикация одна
         self.assertEqual(Post.objects.count(), 1)
         form_data = {
             'text': 'Публикация 2 отредактирована',
@@ -137,7 +136,6 @@ class PostCreateFormTests(TestCase):
             data=form_data,
             follow=True
         )
-        # Проверка, что количество публикаций не изменилось
         self.assertEqual(Post.objects.count(), 1)
         post = Post.objects.first()
         self.assertEqual(post.author, self.post.author,
@@ -203,3 +201,7 @@ class PostCreateFormTests(TestCase):
             follow=True
         )
         self.assertEqual(Comment.objects.count(), 1)
+        comment = Comment.objects.first()
+        self.assertEqual(comment.post.id, self.post.id)
+        self.assertEqual(comment.author, self.user)
+        self.assertEqual(comment.text, form_data['text'])

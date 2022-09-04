@@ -50,12 +50,12 @@ class Group(models.Model):
     slug = models.SlugField('Тег сообщества', unique=True)
     description = models.TextField('Описание сообщества')
 
-    def __str__(self):
-        return self.title
-
     class Meta:
         verbose_name = 'Сообщество'
         verbose_name_plural = 'Сообщества'
+
+    def __str__(self):
+        return self.title
 
 
 class Comment(models.Model):
@@ -85,6 +85,9 @@ class Comment(models.Model):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
 
+    def __str__(self):
+        return self.text[:30]
+
 
 class Follow(models.Model):
     user = models.ForeignKey(
@@ -104,5 +107,11 @@ class Follow(models.Model):
         verbose_name = 'Подписка на авторов'
         verbose_name_plural = 'Подписки на авторов'
         constraints = [
-            models.UniqueConstraint(fields=['user', 'author'], name='unique_follow')
+            models.UniqueConstraint(fields=['user', 'author'],
+                                    name='unique_follow'),
+            models.CheckConstraint(name="prevent_self_follow",
+                                   check=~models.Q(user=models.F("user")),)
         ]
+
+    def __str__(self):
+        return f'{self.user} подписан на {self.author}'
